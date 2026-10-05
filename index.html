@@ -1,0 +1,805 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Homestead Guest App</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Raleway:wght@400;500;600;700;800&display=swap"><style>
+/* ============================================================
+   TOKENS — page stage (theme-aware)
+   ============================================================ */
+:root{
+  --stage:#EAE6DD;
+  --stage-2:#FAF9F4;
+  --stage-3:#E1DACB;
+  --ink:#22271F;
+  --ink-2:#4A4C3E;
+  --muted:#6F6E60;
+  --line:#D3CAB7;
+  --line-soft:#DDD6C6;
+  --accent:#8F6A2A;
+  --accent-soft:#EFD9B4;
+  --pine:#636951;
+  --on-pine:#FAF9F4;
+  --shadow:0 30px 70px -30px rgba(22,33,28,.45), 0 4px 14px -6px rgba(22,33,28,.2);
+
+  --display:"Cormorant Garamond",Georgia,"Times New Roman",serif;
+  --ui:"Raleway",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  --mono:"Raleway",-apple-system,sans-serif;
+
+  /* app palette — fixed: a device screen keeps its own identity */
+  --app-bg:#FAF9F4;
+  --app-surface:#FFFFFF;
+  --app-ink:#22271F;
+  --app-ink-2:#44463A;
+  --app-muted:#74725F;
+  --app-line:#E4DDCF;
+  --app-pine:#636951;
+  --app-pine-2:#6C7651;
+  --app-marigold:#C9A45E;
+  --app-marigold-ink:#7A5A1E;
+  --app-clay:#9A4A2F;
+  --app-clay-soft:#F3E4DB;
+  --app-mint:#EEEBDD;
+  --app-sand:#EAE6DD;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --stage:#15170F;
+    --stage-2:#1C1F15;
+    --stage-3:#24281C;
+    --ink:#EDEADD;
+    --ink-2:#C6C7B4;
+    --muted:#9A9985;
+    --line:#34382A;
+    --line-soft:#2B2F22;
+    --accent:#C9A45E;
+    --accent-soft:#3A2E17;
+    --pine:#B4BC93;
+    --on-pine:#15170F;
+    --shadow:0 40px 90px -40px rgba(0,0,0,.8), 0 4px 18px -8px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  --stage:#15170F;
+  --stage-2:#1C1F15;
+  --stage-3:#24281C;
+  --ink:#EDEADD;
+  --ink-2:#C6C7B4;
+  --muted:#9A9985;
+  --line:#34382A;
+  --line-soft:#2B2F22;
+  --accent:#C9A45E;
+  --accent-soft:#3A2E17;
+  --pine:#B4BC93;
+  --on-pine:#15170F;
+  --shadow:0 40px 90px -40px rgba(0,0,0,.8), 0 4px 18px -8px rgba(0,0,0,.6);
+}
+
+*{box-sizing:border-box}
+body{
+  background:var(--stage);
+  color:var(--ink);
+  font-family:var(--ui);
+  font-size:15px;
+  line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,h4{margin:0;text-wrap:balance}
+p{margin:0}
+ul{margin:0;padding:0;list-style:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+.eyebrow{
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--muted);
+}
+
+/* ============================================================
+   PAGE CHROME
+   ============================================================ */
+.topbar{
+  display:flex;align-items:center;gap:18px;flex-wrap:wrap;
+  padding:18px 28px;border-bottom:1px solid var(--line);
+  background:var(--stage-2);
+}
+.mark{
+  width:38px;height:38px;border-radius:11px;flex:none;
+  background:var(--pine);color:var(--on-pine);
+  display:grid;place-items:center;
+  font-family:var(--display);font-weight:700;font-size:16px;letter-spacing:.02em;
+}
+.topbar-title{display:flex;flex-direction:column;gap:1px;margin-right:auto}
+.topbar-title strong{font-family:var(--display);font-weight:600;font-size:19px;letter-spacing:-.01em}
+.topbar-title span{font-size:12.5px;color:var(--muted)}
+.tag{
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;
+  padding:5px 9px;border-radius:6px;border:1px solid var(--line);color:var(--muted);
+}
+.tag.hot{border-color:var(--accent);color:var(--accent)}
+.tag.toggle{cursor:pointer;transition:background .15s,color .15s,border-color .15s}
+.tag.toggle:hover{border-color:var(--ink-2);color:var(--ink)}
+.tag.toggle[aria-pressed="true"]{background:var(--pine);border-color:var(--pine);color:var(--on-pine)}
+
+/* ============================================================
+   THREE-COLUMN STAGE
+   ============================================================ */
+.layout{
+  display:grid;
+  grid-template-columns:238px minmax(0,1fr);
+  gap:0;
+  align-items:start;
+  min-height:calc(100vh - 76px);
+}
+/* Demo view is the default: Italian prototype only, no English on screen.
+   The "Note" button (or N) reveals the presenter notes. */
+body[data-notes="on"] .notes{display:block}
+@media (min-width:1181px){
+  body[data-notes="on"] .layout{grid-template-columns:238px minmax(0,1fr) 340px}
+}
+.rail{
+  border-right:1px solid var(--line);
+  padding:22px 16px 40px;
+  position:sticky;top:0;
+  max-height:100vh;overflow-y:auto;
+}
+.rail-group{margin-bottom:18px}
+.rail-group > .eyebrow{padding:0 10px 7px}
+.rail-item{
+  display:flex;align-items:center;gap:10px;width:100%;text-align:left;
+  padding:8px 10px;border-radius:9px;color:var(--ink-2);
+  font-size:13.5px;font-weight:500;transition:background .15s,color .15s;
+}
+.rail-item:hover{background:var(--stage-3);color:var(--ink)}
+.rail-item .num{
+  font-family:var(--mono);font-size:10.5px;color:var(--muted);
+  width:18px;flex:none;
+}
+.rail-item[aria-current="true"]{background:var(--pine);color:var(--on-pine);font-weight:600}
+.rail-item[aria-current="true"] .num{color:inherit;opacity:.65}
+
+.stage{
+  padding:30px 20px 48px;
+  display:flex;flex-direction:column;align-items:center;gap:18px;
+  background:
+    radial-gradient(680px 420px at 50% 18%, color-mix(in srgb, var(--accent) 11%, transparent), transparent 70%),
+    var(--stage);
+}
+.stage-hint{
+  display:flex;align-items:center;gap:9px;color:var(--muted);font-size:12.5px;
+}
+.stage-hint .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);flex:none}
+
+.notes{
+  display:none;
+  border-left:1px solid var(--line);
+  padding:26px 24px 48px;
+  position:sticky;top:0;
+  max-height:100vh;overflow-y:auto;
+  background:var(--stage-2);
+}
+
+/* ============================================================
+   PHONE FRAME
+   ============================================================ */
+.phone-wrap{
+  --s:1;
+  width:calc(414px * var(--s));
+  height:calc(836px * var(--s));
+}
+.phone{
+  width:414px;height:836px;
+  transform:scale(var(--s));transform-origin:top center;
+  border-radius:50px;
+  background:linear-gradient(160deg,#34362A,#171910 55%,#2B2D20);
+  padding:12px;
+  box-shadow:var(--shadow), 0 0 0 1.5px rgba(255,255,255,.07) inset;
+  position:relative;
+}
+.phone::after{
+  content:"";position:absolute;left:50%;transform:translateX(-50%);
+  top:24px;width:104px;height:26px;border-radius:14px;background:#0C0D08;z-index:6;
+}
+.screen{
+  width:100%;height:100%;border-radius:39px;overflow:hidden;
+  background:var(--app-bg);color:var(--app-ink);
+  display:flex;flex-direction:column;position:relative;
+}
+
+/* status bar */
+.statusbar{
+  height:48px;flex:none;display:flex;align-items:flex-end;justify-content:space-between;
+  padding:0 26px 4px;font-size:12.5px;font-weight:700;letter-spacing:.01em;
+  position:relative;z-index:5;
+}
+.statusbar.on-dark{color:#fff}
+.sb-right{display:flex;align-items:center;gap:5px}
+.sb-bar{width:3px;border-radius:1px;background:currentColor}
+.sb-batt{width:22px;height:11px;border:1.4px solid currentColor;border-radius:3px;position:relative;opacity:.9}
+.sb-batt::before{content:"";position:absolute;inset:2px;right:6px;background:currentColor;border-radius:1px}
+
+/* scrolling body */
+.app-scroll{flex:1;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none}
+.app-scroll::-webkit-scrollbar{display:none}
+.pad{padding:0 20px}
+.stack{display:flex;flex-direction:column}
+
+/* app views */
+.view{display:none;height:100%;flex-direction:column}
+.view.active{display:flex}
+
+/* ============================================================
+   APP COMPONENTS
+   ============================================================ */
+.a-h1{font-family:var(--display);font-size:27px;font-weight:600;letter-spacing:-.02em;line-height:1.15}
+.a-h2{font-family:var(--display);font-size:19px;font-weight:600;letter-spacing:-.015em}
+.a-h3{font-size:14.5px;font-weight:700;letter-spacing:-.01em}
+.a-label{
+  font-family:var(--mono);font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--app-muted);
+}
+.a-meta{font-size:12px;color:var(--app-muted);font-weight:500}
+
+.sec-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:11px}
+.sec-head .link{font-size:12px;font-weight:600;color:var(--app-pine-2)}
+
+.appbar{
+  flex:none;display:flex;align-items:center;gap:12px;padding:2px 20px 14px;
+}
+.appbar .a-h2{margin-right:auto}
+.icon-btn{
+  width:36px;height:36px;border-radius:11px;flex:none;
+  display:grid;place-items:center;background:var(--app-surface);
+  border:1px solid var(--app-line);color:var(--app-ink-2);
+}
+.icon-btn.ghost{background:transparent;border-color:transparent}
+.icon-btn.on-dark{background:rgba(255,255,255,.16);border-color:transparent;color:#fff}
+
+.card{
+  background:var(--app-surface);border:1px solid var(--app-line);
+  border-radius:18px;padding:14px;
+}
+
+/* thumbnails built from gradients + line art, no external assets */
+.thumb{
+  position:relative;overflow:hidden;border-radius:14px;flex:none;
+  background:linear-gradient(145deg,var(--t1,#3C6455),var(--t2,#1E3A30));
+}
+.thumb > svg:not(.ico){position:absolute;inset:0;width:100%;height:100%}
+.thumb > svg.ico{position:relative}
+.thumb .dur{
+  position:absolute;right:6px;bottom:6px;z-index:2;
+  font-family:var(--mono);font-size:9.5px;color:#fff;
+  background:rgba(11,16,14,.62);padding:2px 5px;border-radius:5px;
+}
+.t-crater{--t1:#5E8F8C;--t2:#27403E}
+.t-pool{--t1:#7BA3A0;--t2:#3A6563}
+.t-grill{--t1:#A5593A;--t2:#5E2F1D}
+.t-atv{--t1:#8A6A3A;--t2:#4A3820}
+.t-pickle{--t1:#7C8C5A;--t2:#3A4727}
+.t-trail{--t1:#7C8062;--t2:#3B3E2B}
+.t-spa{--t1:#B9A58C;--t2:#6A5A45}
+.t-sup{--t1:#B08D57;--t2:#6E5129}
+.t-pilates{--t1:#3E6858;--t2:#1D362C}
+.t-yoga{--t1:#5C7F8C;--t2:#2A414B}
+.t-flow{--t1:#B07B2E;--t2:#5E3D11}
+.t-mobility{--t1:#6E7F5A;--t2:#33402A}
+.t-zumba{--t1:#C0705E;--t2:#6B3226}
+.t-prenatal{--t1:#C99A9A;--t2:#7A4E52}
+
+/* horizontal rails */
+.hrail{display:flex;gap:12px;overflow-x:auto;padding:2px 20px 4px;scrollbar-width:none}
+.hrail::-webkit-scrollbar{display:none}
+
+/* class list row */
+.row{
+  display:flex;gap:12px;align-items:center;width:100%;text-align:left;
+  background:var(--app-surface);border:1px solid var(--app-line);
+  border-radius:16px;padding:9px;transition:border-color .15s,transform .1s;
+}
+.row:hover{border-color:var(--app-pine-2)}
+.row:active{transform:scale(.99)}
+.row .thumb{width:70px;height:62px}
+.row-body{min-width:0;flex:1;display:flex;flex-direction:column;gap:3px}
+.row-body .t{font-size:13.5px;font-weight:700;letter-spacing:-.01em;line-height:1.25}
+
+/* pills / chips */
+.pill{
+  display:inline-flex;align-items:center;gap:5px;
+  font-size:11px;font-weight:600;padding:3px 8px;border-radius:999px;
+  background:var(--app-mint);color:var(--app-pine);
+}
+.pill.sand{background:var(--app-sand);color:var(--app-marigold-ink)}
+.pill.clay{background:var(--app-clay-soft);color:#8E4437}
+.pill.live{background:#FBE9E6;color:#A83B2A}
+
+.chips{display:flex;gap:8px;overflow-x:auto;padding:0 20px 2px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{
+  flex:none;font-size:12.5px;font-weight:600;padding:7px 13px;border-radius:999px;
+  border:1px solid var(--app-line);background:var(--app-surface);color:var(--app-ink-2);
+}
+.chip[aria-pressed="true"]{background:var(--app-pine);border-color:var(--app-pine);color:#fff}
+
+.seg{
+  display:flex;gap:3px;background:var(--app-line);padding:3px;border-radius:12px;
+}
+.seg button{
+  flex:1;font-size:12.5px;font-weight:600;padding:7px 4px;border-radius:9px;color:var(--app-ink-2);
+}
+.seg button[aria-pressed="true"]{background:var(--app-surface);color:var(--app-ink);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+
+/* buttons */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  font-size:14px;font-weight:700;padding:13px 18px;border-radius:14px;
+  background:var(--app-pine);color:#fff;width:100%;transition:filter .15s;
+}
+.btn:hover{filter:brightness(1.1)}
+.btn.amber{background:var(--app-marigold);color:#2A1B04}
+.btn.outline{background:transparent;border:1.5px solid var(--app-line);color:var(--app-ink)}
+.btn.sm{font-size:12.5px;padding:8px 14px;width:auto;border-radius:11px}
+
+/* progress */
+.bar{display:block;height:6px;border-radius:99px;background:var(--app-line);overflow:hidden}
+.bar > i{display:block;height:100%;border-radius:99px;background:var(--app-pine-2)}
+.bar.amber > i{background:var(--app-marigold)}
+.bar.clay > i{background:var(--app-clay)}
+
+/* tab bar */
+.tabbar{
+  flex:none;display:flex;padding:9px 8px 22px;
+  background:color-mix(in srgb, var(--app-surface) 88%, transparent);
+  backdrop-filter:blur(14px);
+  border-top:1px solid var(--app-line);
+}
+.tab{
+  flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;
+  font-size:9.5px;font-weight:600;color:var(--app-muted);padding:4px 0;
+}
+.tab[aria-current="true"]{color:var(--app-pine)}
+.tab svg{width:21px;height:21px}
+
+/* hero blocks */
+.hero-pine{
+  background:linear-gradient(155deg,#4B5039,#2A2D20);color:#fff;position:relative;overflow:hidden;
+}
+.hero-pine .deco{position:absolute;inset:0;opacity:.55}
+
+/* stat grid */
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}
+.stat{background:var(--app-surface);border:1px solid var(--app-line);border-radius:15px;padding:11px 12px}
+.stat b{display:block;font-family:var(--display);font-size:22px;font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+
+/* schedule */
+.slot{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--app-line)}
+.slot:last-child{border-bottom:0}
+.slot .time{font-family:var(--mono);font-size:12px;font-weight:500;width:44px;flex:none;padding-top:2px}
+.week{display:flex;gap:6px}
+.day{
+  flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;
+  padding:8px 0;border-radius:12px;border:1px solid transparent;font-size:11px;color:var(--app-muted);
+}
+.day b{font-size:14px;color:var(--app-ink);font-variant-numeric:tabular-nums}
+.day[aria-pressed="true"]{background:var(--app-pine);border-color:var(--app-pine);color:rgba(255,255,255,.75)}
+.day[aria-pressed="true"] b{color:#fff}
+
+/* day rows in a program */
+.dayrow{display:flex;align-items:center;gap:11px;padding:10px 0;border-bottom:1px solid var(--app-line);width:100%;text-align:left}
+.dayrow:last-child{border-bottom:0}
+.tick{
+  width:24px;height:24px;border-radius:50%;flex:none;display:grid;place-items:center;
+  border:1.5px solid var(--app-line);color:var(--app-muted);
+}
+.tick.done{background:var(--app-pine);border-color:var(--app-pine);color:#fff}
+.tick.today{border-color:var(--app-marigold);color:var(--app-marigold-ink);border-width:2px}
+
+/* quote from Roberta */
+.quote{
+  background:var(--app-sand);border-radius:16px;padding:13px 14px;
+  font-family:var(--display);font-size:14px;line-height:1.45;color:#4A3A1A;
+}
+.quote .who{display:block;margin-top:7px;font-family:var(--ui);font-size:11px;font-weight:700;letter-spacing:.02em;color:var(--app-marigold-ink)}
+
+/* settings list */
+.list-item{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:13px 0;border-bottom:1px solid var(--app-line);font-size:14px;font-weight:600}
+.list-item:last-child{border-bottom:0}
+.list-item .v{margin-left:auto;font-size:12.5px;font-weight:500;color:var(--app-muted)}
+
+/* plan cards */
+.plan{
+  width:100%;text-align:left;border:1.5px solid var(--app-line);background:var(--app-surface);
+  border-radius:18px;padding:14px;display:flex;gap:12px;align-items:flex-start;
+}
+.plan[aria-pressed="true"]{border-color:var(--app-pine);background:var(--app-mint)}
+.radio{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--app-line);flex:none;margin-top:2px;display:grid;place-items:center}
+.plan[aria-pressed="true"] .radio{border-color:var(--app-pine);background:var(--app-pine);color:#fff}
+
+/* toggle */
+.switch{width:42px;height:25px;border-radius:99px;background:var(--app-pine);position:relative;flex:none;margin-left:auto}
+.switch::after{content:"";position:absolute;top:2.5px;left:20px;width:20px;height:20px;border-radius:50%;background:#fff;transition:left .18s}
+.switch[aria-pressed="false"]{background:var(--app-line)}
+.switch[aria-pressed="false"]::after{left:2.5px}
+
+/* success burst */
+.burst{
+  width:76px;height:76px;border-radius:50%;display:grid;place-items:center;
+  background:var(--app-pine);color:#fff;margin:0 auto;
+  box-shadow:0 0 0 12px var(--app-mint);
+}
+
+/* ============================================================
+   NOTES PANEL
+   ============================================================ */
+.notes h2{font-family:var(--display);font-size:22px;font-weight:600;letter-spacing:-.02em;margin:6px 0 10px}
+.notes .n-list{display:flex;flex-direction:column;gap:9px;margin-top:6px}
+.notes .n-list li{display:flex;gap:9px;font-size:13.5px;color:var(--ink-2);line-height:1.5}
+.notes .n-list li::before{
+  content:"";width:5px;height:5px;border-radius:50%;background:var(--accent);
+  flex:none;margin-top:8px;
+}
+.n-why{
+  margin-top:20px;padding:14px;border-radius:13px;
+  background:var(--stage);border:1px solid var(--line-soft);
+}
+.n-why p{font-size:13.5px;color:var(--ink-2);margin-top:6px;line-height:1.5}
+.n-nav{display:flex;gap:8px;margin-top:22px}
+.n-nav button{
+  flex:1;display:flex;align-items:center;justify-content:center;gap:7px;
+  padding:10px;border-radius:11px;border:1px solid var(--line);
+  font-size:13px;font-weight:600;color:var(--ink-2);background:var(--stage-2);
+}
+.n-nav button:hover:not(:disabled){background:var(--stage-3);color:var(--ink)}
+.n-nav button:disabled{opacity:.4;cursor:not-allowed}
+.n-foot{margin-top:26px;padding-top:18px;border-top:1px solid var(--line-soft);font-size:12px;color:var(--muted);line-height:1.6}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width:1180px){
+  .layout{grid-template-columns:1fr;min-height:0}
+  .rail{
+    position:static;max-height:none;border-right:0;border-bottom:1px solid var(--line);
+    display:flex;gap:8px;overflow-x:auto;padding:12px 16px;
+  }
+  .rail-group{display:flex;align-items:center;gap:8px;margin:0}
+  .rail-group > .eyebrow{padding:0 4px 0 6px;white-space:nowrap}
+  .rail-item{width:auto;white-space:nowrap;border:1px solid var(--line);padding:7px 12px}
+  .rail-item .num{display:none}
+  .notes{position:static;max-height:none;border-left:0;border-top:1px solid var(--line)}
+}
+@media (max-width:520px){
+  .phone-wrap{--s:.78}
+  .stage{padding:20px 10px 34px}
+  .topbar{padding:14px 16px}
+}
+
+.a-h1{font-size:33px;font-weight:600;letter-spacing:-.01em}.a-h2{font-size:23px;letter-spacing:-.005em}.stat b{font-size:25px}
+.a-label,.eyebrow{font-weight:700;font-size:9.5px}.btn,.chip,.pill,.tab{letter-spacing:.01em}
+.quote{font-size:16px}.mark{font-size:20px}.topbar-title strong{font-size:23px}
+.bubble{max-width:82%;padding:10px 13px;border-radius:16px;font-size:13.5px;line-height:1.45}
+.bubble.in{background:var(--app-surface);border:1px solid var(--app-line);border-bottom-left-radius:5px;align-self:flex-start}
+.bubble.out{background:var(--app-pine);color:#fff;border-bottom-right-radius:5px;align-self:flex-end}
+.bubble small{display:block;font-size:10.5px;opacity:.6;margin-top:4px}
+.bubble .acts{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.bubble .acts button{font-size:12px;font-weight:700;padding:6px 11px;border-radius:99px;background:var(--app-mint);color:var(--app-pine)}
+.typing{display:flex;gap:4px;padding:13px 14px}.typing i{width:6px;height:6px;border-radius:50%;background:var(--app-muted);animation:bl 1s infinite}.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+@keyframes bl{0%,60%,100%{opacity:.25}30%{opacity:1}}
+.slotgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.slotbtn{padding:10px 4px;border-radius:13px;border:1.5px solid var(--app-line);background:var(--app-surface);text-align:center;font-size:13px;font-weight:700}
+.slotbtn small{display:block;font-size:10.5px;font-weight:500;color:var(--app-muted);margin-top:1px}
+.slotbtn[aria-pressed="true"]{border-color:var(--app-pine);background:var(--app-mint);color:var(--app-pine)}
+.slotbtn:disabled{opacity:.45;cursor:not-allowed}
+.stepper{display:flex;align-items:center;gap:12px}
+.stepper button{width:32px;height:32px;border-radius:50%;border:1.5px solid var(--app-line);background:var(--app-surface);font-size:17px;font-weight:700;line-height:1}
+.stepper b{font-family:var(--display);font-size:22px;min-width:20px;text-align:center}
+.qgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}
+.qa{display:flex;gap:10px;align-items:center;text-align:left;padding:12px;border-radius:15px;background:var(--app-surface);border:1px solid var(--app-line);font-size:13px;font-weight:700;line-height:1.25}
+.qa i{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;background:var(--app-mint);color:var(--app-pine);flex:none}
+.qa:hover{border-color:var(--app-pine-2)}
+.menu-item{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--app-line);align-items:flex-start}
+.menu-item:last-child{border-bottom:0}
+.menu-item .price{margin-left:auto;font-weight:700;font-size:13.5px;font-variant-numeric:tabular-nums}
+.timeline{position:relative;padding-left:22px}
+.timeline::before{content:"";position:absolute;left:6px;top:6px;bottom:6px;width:2px;background:var(--app-line)}
+.tl{position:relative;padding:0 0 16px}
+.tl::before{content:"";position:absolute;left:-21px;top:4px;width:12px;height:12px;border-radius:50%;background:var(--app-surface);border:2.5px solid var(--app-pine-2)}
+.tl.now::before{border-color:var(--app-marigold);background:var(--app-marigold)}
+.tl.sug::before{border-style:dashed;border-color:var(--app-muted)}
+.tl .t{font-family:var(--mono);font-size:11px;color:var(--app-muted);font-weight:600}
+.payopt{width:100%;text-align:left;display:flex;gap:12px;align-items:center;padding:13px;border:1.5px solid var(--app-line);border-radius:15px;background:var(--app-surface);font-size:13.5px;font-weight:700}
+.payopt[aria-pressed="true"]{border-color:var(--app-pine);background:var(--app-mint)}
+.payopt .radio{margin:0}
+.payopt[aria-pressed="true"] .radio{border-color:var(--app-pine);background:var(--app-pine);color:#fff}
+.qrbox{background:#fff;border-radius:20px;padding:16px;border:1px solid var(--app-line);display:grid;place-items:center}
+.tag.hot{border-color:var(--accent)}
+</style></head><body>
+<svg style="display:none" aria-hidden="true"><symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5.5 9.5V20h13V9.5"/><path d="M10 20v-5h4v5"/></symbol><symbol id="i-compass" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></symbol><symbol id="i-chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/></symbol><symbol id="i-cal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></symbol><symbol id="i-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></symbol><symbol id="i-key" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M16 7l3 3M14 9l2 2"/></symbol><symbol id="i-drop" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/></symbol><symbol id="i-fork" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v8a2 2 0 0 0 2 2v8M11 3v8a2 2 0 0 1-2 2M7 3v6M17 21V3c-2.5 1.5-3 5-3 8h3"/></symbol><symbol id="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M5 5l1.8 1.8M17.2 17.2L19 19M19 5l-1.8 1.8M6.8 17.2L5 19"/></symbol><symbol id="i-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A15 15 0 0 1 3 6a2 2 0 0 1 2-2z"/></symbol><symbol id="i-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></symbol><symbol id="i-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></symbol><symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></symbol><symbol id="i-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 10a5.5 5.5 0 0 1 11 0c0 4 1.5 5.5 1.5 5.5H5S6.5 14 6.5 10z"/><path d="M10 19a2.2 2.2 0 0 0 4 0"/></symbol><symbol id="i-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s6.5-6.1 6.5-10.5a6.5 6.5 0 1 0-13 0C5.5 14.9 12 21 12 21z"/><circle cx="12" cy="10.5" r="2.4"/></symbol><symbol id="i-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12L20 4l-6 16-2.5-6.5z"/></symbol><symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></symbol><symbol id="i-card" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10.5h18M7 15h3"/></symbol><symbol id="i-qr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><path d="M14 14h2v2h-2zM18 14h2v6h-4M14 18h2"/></symbol><symbol id="i-share" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4"/><path d="M8.5 7.5L12 4l3.5 3.5"/><path d="M5.5 13v5.5a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2V13"/></symbol></svg>
+<header class="topbar"><div class="mark">H</div><div class="topbar-title"><strong>Homestead&nbsp;Guest&nbsp;App</strong><span>Concept prototype · a branded guest app for Homestead Resort, Midway, Utah</span></div><span class="tag hot">Clickable</span><span class="tag">12 screens</span><span class="tag">iOS &amp; Android</span><button class="tag toggle" id="notes-toggle" aria-pressed="false" title="Presenter notes (N)">Notes</button></header>
+<div class="layout"><nav class="rail" id="rail" aria-label="Screen index">
+<div class="rail-group"><div class="eyebrow">Arrival</div><button class="rail-item" data-go="welcome"><span class="num">01</span>Welcome</button><button class="rail-item" data-go="home"><span class="num">02</span>Today</button></div>
+<div class="rail-group"><div class="eyebrow">Book without calling</div><button class="rail-item" data-go="explore"><span class="num">03</span>Explore</button><button class="rail-item" data-go="crater"><span class="num">04</span>The Crater</button><button class="rail-item" data-go="slots"><span class="num">05</span>Pick a time</button><button class="rail-item" data-go="checkout"><span class="num">06</span>Checkout</button><button class="rail-item" data-go="confirmed"><span class="num">07</span>Confirmed</button><button class="rail-item" data-go="pass"><span class="num">08</span>Entry pass</button></div>
+<div class="rail-group"><div class="eyebrow">On property</div><button class="rail-item" data-go="dining"><span class="num">09</span>Dining</button><button class="rail-item" data-go="chat"><span class="num">10</span>Concierge</button><button class="rail-item" data-go="trip"><span class="num">11</span>My trip</button><button class="rail-item" data-go="stay"><span class="num">12</span>My stay</button></div></nav><main class="stage"><div class="phone-wrap"><div class="phone"><div class="screen">
+<section class="view" data-view="welcome" style="background:linear-gradient(160deg,#636951 0%,#2A2D20 62%,#4A3A1A 100%)"><div class="statusbar on-dark"><span>4:12</span><span class="sb-right"><i class="sb-bar" style="height:5px"></i><i class="sb-bar" style="height:7px"></i><i class="sb-bar" style="height:9px"></i><i class="sb-bar" style="height:11px"></i><i class="sb-batt"></i></span></div>
+<div class="app-scroll" style="display:flex;flex-direction:column;color:#fff">
+<div style="position:relative;height:280px;flex:none"><svg viewBox="0 0 414 290" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%" aria-hidden="true"><g fill="none" stroke="#C9A45E" stroke-width="1.1" opacity=".5"><ellipse cx="207" cy="150" rx="60" ry="22"/><ellipse cx="207" cy="150" rx="92" ry="34"/><ellipse cx="207" cy="150" rx="126" ry="48"/><ellipse cx="207" cy="150" rx="162" ry="62"/></g><g fill="none" stroke="#fff" stroke-width="1.4" opacity=".35" stroke-linecap="round"><path d="M150 120c-10-14 10-24 0-40"/><path d="M190 125c-10-14 10-24 0-44"/><path d="M230 120c-10-14 10-24 0-40"/></g><path d="M0 250c60-30 110 10 207-8s140 14 207-14" fill="none" stroke="#E1D5C3" stroke-width="1.4" opacity=".6"/></svg>
+<div style="position:absolute;inset:0;display:grid;place-items:center"><div style="width:88px;height:88px;border-radius:26px;background:#FAF9F4;color:#4B5039;display:grid;place-items:center;font-family:var(--display);font-weight:700;font-size:46px">H</div></div></div>
+<div class="pad stack" style="gap:14px"><span class="a-label" style="color:rgba(255,255,255,.6)">Homestead · Midway, Utah</span>
+<h1 class="a-h1" style="font-size:38px;color:#fff;line-height:1.05">Your stay,<br>in your pocket.</h1>
+<p style="font-size:14.5px;line-height:1.55;color:rgba(255,255,255,.8)">Soak in The Crater, book scuba, reserve a table at the 1886 Grill or ask the concierge, all without picking up the phone.</p>
+<div style="display:flex;gap:18px;margin:4px 0 2px"><div><b style="font-family:var(--display);font-size:26px">1</b><div style="font-size:11px;color:rgba(255,255,255,.6)">geothermal Crater</div></div><div><b style="font-family:var(--display);font-size:26px">6</b><div style="font-size:11px;color:rgba(255,255,255,.6)">heated pools</div></div><div><b style="font-family:var(--display);font-size:26px">17</b><div style="font-size:11px;color:rgba(255,255,255,.6)">guest cottages</div></div></div>
+<button class="btn amber" data-go="home" style="margin-top:8px">Add my reservation</button>
+<button class="btn" data-go="home" style="background:rgba(255,255,255,.14)">Sign in</button>
+<p style="font-size:11.5px;color:rgba(255,255,255,.5);text-align:center;margin:2px 0 22px">Use the confirmation number from your booking email</p></div></div></section>
+<section class="view" data-view="home"><div class="statusbar"><span>4:12</span><span class="sb-right"><i class="sb-bar" style="height:5px"></i><i class="sb-bar" style="height:7px"></i><i class="sb-bar" style="height:9px"></i><i class="sb-bar" style="height:11px"></i><i class="sb-batt"></i></span></div>
+<div class="appbar"><div style="margin-right:auto"><span class="a-label">Tuesday, Oct 13 · 52°F</span><h2 class="a-h2" style="margin-top:1px">Good afternoon, Emma</h2></div><button class="icon-btn" aria-label="Notifications"><svg width="18" height="18"><use href="#i-bell"/></svg></button></div>
+<div class="app-scroll stack" style="gap:20px;padding-bottom:16px">
+<div class="pad"><div class="card hero-pine" style="padding:14px 15px;border:0"><svg class="deco" viewBox="0 0 380 120" preserveAspectRatio="none" aria-hidden="true"><g fill="none" stroke="#E1D5C3" stroke-width="1" opacity=".35"><ellipse cx="300" cy="60" rx="50" ry="18"/><ellipse cx="300" cy="60" rx="90" ry="32"/><ellipse cx="300" cy="60" rx="130" ry="46"/></g></svg>
+<div style="position:relative;display:flex;align-items:center;gap:12px"><div style="width:44px;height:44px;border-radius:14px;background:rgba(201,164,94,.95);color:#2A1B04;display:grid;place-items:center;flex:none"><svg width="22" height="22"><use href="#i-key"/></svg></div>
+<div style="flex:1;min-width:0"><div style="font-family:var(--display);font-size:24px;font-weight:600;color:#fff;line-height:1.1">Cottage 12</div><div style="font-size:11.5px;color:rgba(255,255,255,.75)">Oct 12 – 15 · 4 guests · check-out Thu 11 AM</div></div></div>
+<div style="position:relative;display:flex;gap:8px;margin-top:13px"><button class="btn amber sm" style="flex:1">Unlock door</button><button class="btn sm" style="flex:1;background:rgba(255,255,255,.16)" data-go="stay">Stay details</button></div></div></div>
+<div class="pad"><div class="card" style="padding:12px 14px"><div style="display:grid;grid-template-columns:repeat(3,1fr);text-align:center;gap:6px"><div><b style="display:block;font-family:var(--display);font-size:26px;color:var(--app-pine)">94°F</b><span class="a-label">Crater water</span></div><div><b style="display:block;font-family:var(--display);font-size:26px;color:var(--app-pine)">Quiet</b><span class="a-label">Until 5 PM</span></div><div><b style="display:block;font-family:var(--display);font-size:26px;color:var(--app-pine)">6</b><span class="a-label">Spots, 4:30</span></div></div><div class="bar" style="margin-top:10px"><i style="width:68%"></i></div></div></div>
+<div class="stack" style="gap:11px"><div class="pad sec-head" style="margin:0"><h3 class="a-h3">Your plan today</h3><button class="link" data-go="trip">Full trip</button></div>
+<div class="pad"><div class="timeline">
+<div class="tl now"><span class="t">4:30 PM</span><div class="a-h3">Crater soak · 4 guests</div><span class="a-meta">Confirmed · 4 min walk from Cottage 12</span></div>
+<div class="tl"><span class="t">7:00 PM</span><div class="a-h3">Dinner at the 1886 Grill</div><span class="a-meta">Table for 4 · wood-fired pizza night</span></div>
+<div class="tl sug"><span class="t">Suggested</span><div class="a-h3">Add a sunrise soak tomorrow?</div><button class="pill sand" data-book="soak" style="margin-top:4px">Check times</button></div></div></div></div>
+<div class="stack" style="gap:11px"><div class="pad sec-head" style="margin:0"><h3 class="a-h3">Quick actions</h3></div>
+<div class="pad qgrid">
+<button class="qa" data-book="soak"><i><svg width="18" height="18"><use href="#i-drop"/></svg></i>Book a soak</button>
+<button class="qa" data-go="dining"><i><svg width="18" height="18"><use href="#i-fork"/></svg></i>Dine &amp; order</button>
+<button class="qa" data-go="explore"><i><svg width="18" height="18"><use href="#i-compass"/></svg></i>Tours &amp; adventures</button>
+<button class="qa" data-go="chat"><i><svg width="18" height="18"><use href="#i-chat"/></svg></i>Ask concierge</button></div></div>
+</div><nav class="tabbar" data-tabbar></nav></section>
+<section class="view" data-view="explore"><div class="statusbar"><span>4:12</span><span class="sb-right"><i class="sb-bar" style="height:5px"></i><i class="sb-bar" style="height:7px"></i><i class="sb-bar" style="height:9px"></i><i class="sb-bar" style="height:11px"></i><i class="sb-batt"></i></span></div>
+<div class="appbar"><h2 class="a-h2">Explore</h2><button class="icon-btn" aria-label="Notifications"><svg width="18" height="18"><use href="#i-bell"/></svg></button></div>
+<div class="app-scroll stack" style="gap:16px;padding-bottom:16px">
+<div class="chips"><button class="chip" data-chip aria-pressed="true">All</button><button class="chip" data-chip aria-pressed="false">Water</button><button class="chip" data-chip aria-pressed="false">Outdoors</button><button class="chip" data-chip aria-pressed="false">Family</button><button class="chip" data-chip aria-pressed="false">Seasonal</button></div>
+<div class="pad"><button class="thumb t-crater" data-book="soak" style="width:100%;height:178px;display:block"><svg viewBox="0 0 374 178" preserveAspectRatio="none" aria-hidden="true"><g fill="none" stroke="#E1EDEA" stroke-width="1.1" opacity=".5"><ellipse cx="260" cy="110" rx="50" ry="16"/><ellipse cx="260" cy="110" rx="86" ry="28"/><ellipse cx="260" cy="110" rx="124" ry="42"/></g><g fill="none" stroke="#fff" stroke-width="1.4" opacity=".35" stroke-linecap="round"><path d="M235 80c-10-14 10-22 0-38"/><path d="M265 82c-10-14 10-22 0-40"/><path d="M295 80c-10-14 10-22 0-38"/></g></svg>
+<span style="position:absolute;inset:0;display:flex;flex-direction:column;justify-content:space-between;padding:14px;text-align:left"><span style="display:flex;gap:6px"><span class="pill" style="background:rgba(255,255,255,.92)">Signature</span><span class="pill" style="background:rgba(255,255,255,.92)">90–96°F</span></span>
+<span style="display:flex;align-items:flex-end;gap:12px"><span style="flex:1;color:#fff"><span style="display:block;font-family:var(--display);font-size:28px;font-weight:600;line-height:1.05">The Crater</span><span style="display:block;font-size:12px;color:rgba(255,255,255,.85);margin-top:3px">Soak, swim, scuba or SUP yoga in a geothermal spring</span></span><span class="btn amber sm" style="flex:none">Book</span></span></span></button></div>
+<div class="pad stack" style="gap:9px">
+<button class="row" data-book="sup"><span class="thumb t-sup" style="width:70px;height:62px"><svg viewBox="0 0 70 62" preserveAspectRatio="none" aria-hidden="true"><g fill="none" stroke="#fff" stroke-width="1.1" opacity=".5"><circle cx="35" cy="31" r="12"/><circle cx="35" cy="31" r="22"/></g></svg></span><span class="row-body"><span class="t">SUP yoga in the Crater</span><span class="a-meta">Paddleboard yoga on warm water</span><span><span class="pill">Water</span></span></span><svg width="16" height="16" style="color:var(--app-muted)"><use href="#i-right"/></svg></button>
+<button class="row" data-go="chat"><span class="thumb t-pool" style="width:70px;height:62px"><svg viewBox="0 0 70 62" preserveAspectRatio="none" aria-hidden="true"><g fill="none" stroke="#fff" stroke-width="1" opacity=".5"><path d="M-5 40c15-10 25 8 40-2s25 6 40-4"/><path d="M-5 50c15-10 25 8 40-2s25 6 40-4"/></g></svg></span><span class="row-body"><span class="t">Six heated pools</span><span class="a-meta">Open year-round · family and adult-quiet areas</span><span><span class="pill">Water</span></span></span><svg width="16" height="16" style="color:var(--app-muted)"><use href="#i-right"/></svg></button>
+<button class="row" data-go="chat"><span class="thumb t-pickle" style="width:70px;height:62px"><svg viewBox="0 0 70 62" preserveAspectRatio="none" aria-hidden="true"><g fill="none" stroke="#fff" stroke-width="1.1" opacity=".5"><rect x="12" y="12" width="46" height="38" rx="2"/><path d="M35 12v38M12 31h46"/></g></svg></span><span class="row-body"><span class="t">Pickleball</span><span class="a-meta">Indoor and outdoor courts · reserve by the hour</span><span><span class="pill">Outdoors</span></span></span><svg width="16" height="16" style="color:var(--app-muted)"><use href="#i-right"/></svg></button>
+<button class="row" data-go="chat"><span class="thumb t-atv" style="width:70px;height:62px"><svg viewBox="0 0 70 62" preserveAspectRatio="none" aria-hidden="true"><g fill="none" stroke="#fff" stroke-width="1" opacity=".5"><path d="M-5 44l22-18 18 12 20-22 20 14"/></g></svg></span><span class="row-body"><span class="t">Adventourage</span><span class="a-meta">ATV tours · hot air ballooning · wakeboarding</span><span><span class="pill sand">Book with concierge</span></span></span><svg width="16" height="16" style="color:var(--app-muted)"><use href="#i-right"/></svg></button>
+<button class="row" data-go="chat"><span class="thumb t-trail" style="width:70px;height:62px"><svg viewBox="0 0 70 62" preserveAspectRatio="none" aria-hidden="true"><g fill="none" stroke="#fff" stroke-width="1" opacity=".5"><path d="M-5 40c15-10 25 8 40-2s25 6 40-4"/><path d="M-5 50c15-10 25 8 40-2s25 6 40-4"/></g></svg></span><span class="row-body"><span class="t">Hike · bike · snowshoe</span><span class="a-meta">Trails from the front door · gear on request</span><span><span class="pill clay">Seasonal</span></span></span><svg width="16" height="16" style="color:var(--app-muted)"><use href="#i-right"/></svg></button>
+<button class="row" data-notify><span class="thumb t-spa" style="width:70px;height:62px"><svg viewBox="0 0 70 62" preserveAspectRatio="none" aria-hidden="true"><g fill="none" stroke="#fff" stroke-width="1" opacity=".5"><circle cx="35" cy="31" r="12"/><circle cx="35" cy="31" r="22"/></g></svg></span><span class="row-body"><span class="t">The Spa at Homestead</span><span class="a-meta">Opening 2027 · be first to know</span><span><span class="pill sand">Notify me</span></span></span><svg width="16" height="16" style="color:var(--app-muted)"><use href="#i-right"/></svg></button>
+<button class="row" data-notify><span class="thumb t-pickle" style="width:70px;height:62px"><svg viewBox="0 0 70 62" preserveAspectRatio="none" aria-hidden="true"><g fill="none" stroke="#fff" stroke-width="1" opacity=".5"><path d="M-5 44l22-18 18 12 20-22 20 14"/></g></svg></span><span class="row-body"><span class="t">Golf course, redesigned</span><span class="a-meta">Reopening summer 2027</span><span><span class="pill sand">Notify me</span></span></span><svg width="16" height="16" style="color:var(--app-muted)"><use href="#i-right"/></svg></button>
+</div></div><nav class="tabbar" data-tabbar></nav></section>
+<section class="view" data-view="crater"><div class="statusbar on-dark" style="position:absolute;left:0;right:0;top:0"><span>4:12</span><span class="sb-right"><i class="sb-bar" style="height:5px"></i><i class="sb-bar" style="height:7px"></i><i class="sb-bar" style="height:9px"></i><i class="sb-bar" style="height:11px"></i><i class="sb-batt"></i></span></div>
+<div class="app-scroll stack" style="gap:18px;padding-bottom:18px">
+<div style="position:relative;height:240px;flex:none;background:linear-gradient(160deg,#5E8F8C,#27403E)"><svg viewBox="0 0 414 250" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%" aria-hidden="true"><g fill="none" stroke="#E1EDEA" stroke-width="1.1" opacity=".5"><ellipse cx="207" cy="190" rx="70" ry="22"/><ellipse cx="207" cy="190" rx="110" ry="34"/><ellipse cx="207" cy="190" rx="154" ry="48"/></g><g fill="none" stroke="#fff" stroke-width="1.4" opacity=".35" stroke-linecap="round"><path d="M150 120c-10-14 10-24 0-40"/><path d="M190 125c-10-14 10-24 0-44"/><path d="M230 120c-10-14 10-24 0-40"/></g></svg>
+<div style="position:absolute;left:16px;top:56px"><button class="icon-btn on-dark" data-go="explore" aria-label="Back"><svg width="18" height="18"><use href="#i-left"/></svg></button></div>
+<div style="position:absolute;left:20px;right:20px;bottom:16px;color:#fff"><span class="a-label" style="color:rgba(255,255,255,.75)">Geothermal hot spring</span><h1 class="a-h1" style="color:#fff;margin-top:2px;font-size:38px">The Crater</h1></div></div>
+<div class="pad stack" style="gap:16px">
+<div class="seg"><button data-crater="soak" aria-pressed="true">Soak &amp; swim</button><button data-crater="scuba" aria-pressed="false">Scuba</button><button data-crater="sup" aria-pressed="false">SUP yoga</button></div>
+<div id="crater-body" class="stack" style="gap:16px"></div>
+<div class="quote">Sunrise is the quietest time at the Crater. Come early, stay for breakfast at the Milk House after.<span class="who">The Crater team</span></div>
+<button class="btn amber" data-book="current">Choose a time</button></div></div></section>
+<section class="view" data-view="slots"><div class="statusbar"><span>4:12</span><span class="sb-right"><i class="sb-bar" style="height:5px"></i><i class="sb-bar" style="height:7px"></i><i class="sb-bar" style="height:9px"></i><i class="sb-bar" style="height:11px"></i><i class="sb-batt"></i></span></div>
+<div class="appbar"><button class="icon-btn" data-go="crater" aria-label="Back"><svg width="18" height="18"><use href="#i-left"/></svg></button><h2 class="a-h2" id="slots-title">Book</h2></div>
+<div class="app-scroll stack" style="gap:18px;padding-bottom:16px"><div class="pad stack" id="slots-body" style="gap:18px"></div></div></section>
+<section class="view" data-view="checkout"><div class="statusbar"><span>4:12</span><span class="sb-right"><i class="sb-bar" style="height:5px"></i><i class="sb-bar" style="height:7px"></i><i class="sb-bar" style="height:9px"></i><i class="sb-bar" style="height:11px"></i><i class="sb-batt"></i></span></div>
+<div class="appbar"><button class="icon-btn" data-go="slots" aria-label="Back"><svg width="18" height="18"><use href="#i-left"/></svg></button><h2 class="a-h2">Checkout</h2></div>
+<div class="app-scroll stack" style="gap:18px;padding-bottom:16px"><div class="pad stack" id="checkout-body" style="gap:16px"></div></div></section>
+<section class="view" data-view="confirmed"><div class="statusbar"><span>4:12</span><span class="sb-right"><i class="sb-bar" style="height:5px"></i><i class="sb-bar" style="height:7px"></i><i class="sb-bar" style="height:9px"></i><i class="sb-bar" style="height:11px"></i><i class="sb-batt"></i></span></div>
+<div class="app-scroll stack" style="gap:18px;padding:14px 0 18px"><div class="pad stack" id="confirmed-body" style="gap:18px;text-align:center"></div></div><nav class="tabbar" data-tabbar></nav></section>
+<section class="view" data-view="pass"><div class="statusbar"><span>4:12</span><span class="sb-right"><i class="sb-bar" style="height:5px"></i><i class="sb-bar" style="height:7px"></i><i class="sb-bar" style="height:9px"></i><i class="sb-bar" style="height:11px"></i><i class="sb-batt"></i></span></div>
+<div class="appbar"><button class="icon-btn" data-go="confirmed" aria-label="Back"><svg width="18" height="18"><use href="#i-left"/></svg></button><h2 class="a-h2">Entry pass</h2></div>
+<div class="app-scroll stack" style="gap:18px;padding-bottom:16px"><div class="pad stack" id="pass-body" style="gap:16px;text-align:center"></div></div><nav class="tabbar" data-tabbar></nav></section>
+<section class="view" data-view="dining"><div class="statusbar"><span>4:12</span><span class="sb-right"><i class="sb-bar" style="height:5px"></i><i class="sb-bar" style="height:7px"></i><i class="sb-bar" style="height:9px"></i><i class="sb-bar" style="height:11px"></i><i class="sb-batt"></i></span></div>
+<div class="appbar"><h2 class="a-h2">Dining</h2></div>
+<div class="app-scroll stack" style="gap:16px;padding-bottom:16px"><div class="pad stack" style="gap:16px">
+<div class="seg"><button data-seg data-dine="milk" aria-pressed="false">Milk House</button><button data-seg data-dine="grill" aria-pressed="true">1886 Grill</button></div>
+<div id="dine-body" class="stack" style="gap:16px"></div>
+<div class="card" style="display:flex;gap:12px;align-items:center;background:var(--app-sand);border-color:transparent"><div style="flex:1"><span class="a-label">Coming spring 2027</span><div class="a-h2" style="margin-top:2px">Simon's Tavern</div><span class="a-meta">The bounty of the Wasatch region</span></div><button class="btn amber sm" data-notify>Notify me</button></div>
+</div></div><nav class="tabbar" data-tabbar></nav></section>
+<section class="view" data-view="chat"><div class="statusbar"><span>4:12</span><span class="sb-right"><i class="sb-bar" style="height:5px"></i><i class="sb-bar" style="height:7px"></i><i class="sb-bar" style="height:9px"></i><i class="sb-bar" style="height:11px"></i><i class="sb-batt"></i></span></div>
+<div class="appbar"><div style="margin-right:auto"><h2 class="a-h2">Concierge</h2><span class="a-meta" style="display:flex;align-items:center;gap:5px"><i style="width:7px;height:7px;border-radius:50%;background:#5C8A4F;display:inline-block"></i>Online · a person is one tap away</span></div><button class="icon-btn" aria-label="Call"><svg width="18" height="18"><use href="#i-phone"/></svg></button></div>
+<div class="app-scroll stack" id="msgs" style="gap:10px;padding:6px 20px 12px"></div>
+<div class="chips" id="sugg" style="padding-bottom:6px"></div>
+<form id="chat-form" style="flex:none;display:flex;gap:9px;padding:6px 16px 12px"><input id="chat-inp" autocomplete="off" placeholder="Ask anything…" style="flex:1;min-width:0;border:1px solid var(--app-line);background:var(--app-surface);border-radius:14px;padding:11px 14px;font:inherit;font-size:13.5px;color:var(--app-ink);outline:none"><button class="icon-btn" style="background:var(--app-pine);color:#fff;border:0;width:44px;height:44px;border-radius:14px" aria-label="Send"><svg width="18" height="18"><use href="#i-send"/></svg></button></form>
+<nav class="tabbar" data-tabbar></nav></section>
+<section class="view" data-view="trip"><div class="statusbar"><span>4:12</span><span class="sb-right"><i class="sb-bar" style="height:5px"></i><i class="sb-bar" style="height:7px"></i><i class="sb-bar" style="height:9px"></i><i class="sb-bar" style="height:11px"></i><i class="sb-batt"></i></span></div>
+<div class="appbar"><h2 class="a-h2">My trip</h2><button class="icon-btn" data-go="explore" aria-label="Add"><svg width="18" height="18"><use href="#i-plus"/></svg></button></div>
+<div class="app-scroll stack" style="gap:16px;padding-bottom:16px"><div class="pad stack" style="gap:16px">
+<div class="week" style="width:100%"><button class="day" data-day aria-pressed="false">Mon<b>12</b></button><button class="day" data-day aria-pressed="true">Tue<b>13</b></button><button class="day" data-day aria-pressed="false">Wed<b>14</b></button><button class="day" data-day aria-pressed="false">Thu<b>15</b></button></div>
+<div class="timeline" id="trip-body"></div>
+<div class="card" style="display:flex;gap:12px;align-items:center"><div style="flex:1"><div class="a-h3">Express check-out</div><span class="a-meta">Thu 11 AM · skip the desk</span></div><button class="btn sm" style="width:auto">Set up</button></div>
+</div></div><nav class="tabbar" data-tabbar></nav></section>
+<section class="view" data-view="stay"><div class="statusbar"><span>4:12</span><span class="sb-right"><i class="sb-bar" style="height:5px"></i><i class="sb-bar" style="height:7px"></i><i class="sb-bar" style="height:9px"></i><i class="sb-bar" style="height:11px"></i><i class="sb-batt"></i></span></div>
+<div class="appbar"><h2 class="a-h2">My stay</h2></div>
+<div class="app-scroll stack" style="gap:18px;padding-bottom:16px"><div class="pad stack" style="gap:18px">
+<div class="card hero-pine" style="border:0"><span class="a-label" style="color:rgba(255,255,255,.65)">Reservation HM-48213</span><div style="font-family:var(--display);font-size:28px;font-weight:600;margin-top:3px">Cottage 12</div><div style="font-size:12px;color:rgba(255,255,255,.75)">Oct 12 – 15 · 4 guests · 700 N Homestead Dr, Midway</div></div>
+<div class="stats"><div class="stat"><span class="a-label">Room charges</span><b id="stay-charges">$ 126</b></div><div class="stat"><span class="a-label">Bookings</span><b id="stay-count">2</b></div></div>
+<div class="card" style="padding:4px 14px"><button class="list-item"><svg width="18" height="18"><use href="#i-key"/></svg>Digital room key<span class="v">Active</span></button><button class="list-item"><svg width="18" height="18"><use href="#i-sun"/></svg>Housekeeping<span class="v">Do not disturb</span></button><div class="list-item"><svg width="18" height="18"><use href="#i-bell"/></svg>Activity reminders<button class="switch" data-switch aria-pressed="true" aria-label="Reminders"></button></div><button class="list-item" data-go="chat"><svg width="18" height="18"><use href="#i-chat"/></svg>Request towels, crib, late check-out<span class="v">›</span></button></div>
+<div class="card" style="display:flex;gap:12px;align-items:center"><span class="icon-btn" style="background:var(--app-mint)"><svg width="18" height="18"><use href="#i-phone"/></svg></span><div style="flex:1"><div class="a-h3">Prefer to talk?</div><span class="a-meta">Front desk · (435) 654-1102</span></div></div>
+</div></div><nav class="tabbar" data-tabbar></nav></section>
+</div></div></div><div class="stage-hint"><span class="dot"></span>Everything is clickable: pick a time, add extras, check out, ask the concierge. Arrow keys switch screens.</div></main>
+<aside class="notes"><span class="eyebrow" id="n-group"></span><h2 id="n-title"></h2><p id="n-lede" style="font-size:13.5px;color:var(--muted);line-height:1.5"></p><ul class="n-list" id="n-list"></ul>
+<div class="n-why"><span class="eyebrow">Why it matters for Homestead</span><p id="n-why"></p></div>
+<div class="n-nav"><button id="prev"><svg width="15" height="15"><use href="#i-left"/></svg>Previous</button><button id="next">Next<svg width="15" height="15"><use href="#i-right"/></svg></button></div>
+<p class="n-foot">Concept prototype, not a live product. Prices, times, availability and guest details are illustrative. Activities and dining are based on Homestead's public information. In production this connects to the resort's reservation and room-billing systems.</p></aside></div>
+<script>(function(){
+"use strict";
+var $=function(s){return document.querySelector(s)};
+var ORDER=["welcome","home","explore","crater","slots","checkout","confirmed","pass","dining","chat","trip","stay"];
+var NOTES={
+welcome:{group:"Arrival",title:"Welcome",lede:"The first ten seconds. It sells the promise: your whole stay, no phone calls.",list:["Headline names the pain: today much of the stay runs through concierge or phone calls.","Three real numbers from the property: one Crater, six heated pools, 17 cottages.","Guests join with the confirmation number from their booking email, no new account to build."],why:"A branded app means guests book activities directly with Homestead, not through a third-party travel site."},
+home:{group:"Arrival",title:"Today",lede:"One screen that answers 'what is happening right now'.",list:["Digital key and stay details sit at the top, the two things guests open the app for first.","Live Crater strip: water temperature, crowd level and spots left in the next slot.","Today's plan mixes confirmed bookings with a suggested add-on.","Quick actions lead to the four things guests currently phone about."],why:"Every tap on 'Book a soak' is a call the front desk does not have to take."},
+explore:{group:"Book without calling",title:"Explore",lede:"The whole property in one scrollable list.",list:["The Crater leads, with SUP yoga, pools, pickleball and Adventourage behind it.","Bookable items open the booking flow; the rest open the concierge chat.","The Spa and the redesigned golf course show as coming in 2027 with notify-me buttons, so demand is captured early."],why:"The resort has many experiences. A guest who sees them all books more of them."},
+crater:{group:"Book without calling",title:"The Crater",lede:"Soak, scuba and SUP yoga each get their own details. Tap the tabs.",list:["Each activity shows its own price, duration, capacity and rules before the guest asks.","Scuba lists Discover, Certified and full Open Water options.","A note from the Crater team gives the page a human voice."],why:"This is the activity that currently depends most on phone calls, so it is where the app pays back first."},
+slots:{group:"Book without calling",title:"Pick a time",lede:"Fully working: change the day, time, guests and extras and watch the total.",list:["Spots left on every slot. A full slot is disabled instead of a dead end.","Scuba variants and soak durations change the price.","Add-ons such as towels, snorkel set and cocoa turn into upsell revenue at the point of decision."],why:"Guests book at 10 PM from the cottage, outside front-desk hours, and extras get added that a phone call would never mention."},
+checkout:{group:"Book without calling",title:"Checkout",lede:"Charge to the room or pay with a wallet, in one tap.",list:["Room charge is the default, so there is no card to hand over at the desk.","Wallet and saved card are also available.","Cancellation terms are shown right above the button."],why:"A frictionless payment step is what turns browsing into booking."},
+confirmed:{group:"Book without calling",title:"Confirmed",lede:"The confirmation guests screenshot, built from the booking they just made.",list:["Confirmation number, time, party size and walking time from the cottage.","One-tap reminder, which cuts no-shows.","Straight on to the entry pass."],why:"Fewer no-shows means fuller sessions, and guests arrive knowing what to bring."},
+pass:{group:"Book without calling",title:"Entry pass",lede:"A QR code that opens the door at the Crater.",list:["Staff scan the pass at the entrance, no printed tickets or desk lookup.","Shows activity, time and party size so the host can greet the group."],why:"It removes the check-in queue and gives the resort a clean record of who actually showed up."},
+dining:{group:"On property",title:"Dining",lede:"Milk House and 1886 Grill, with reserve or order-to-cottage. Tap the tabs.",list:["Each venue shows what it is known for and popular items.","Reserve a table or order food to the cottage from the same page.","Simon's Tavern appears as coming spring 2027 with a notify-me button."],why:"Dining spend rises when ordering takes one tap. The teaser builds a launch list before opening."},
+chat:{group:"On property",title:"Concierge",lede:"Type a question: it answers and offers to book. Try 'what should I bring' or 'anything for kids'.",list:["Answers come from the resort's own information, so staff stop repeating the same answers.","Action buttons inside replies open the booking flow.","A person is always one tap away."],why:"Concierge handles several guests at once instead of one call at a time, and every request leaves a record."},
+trip:{group:"On property",title:"My trip",lede:"Every booking, dining and tour on one timeline. Anything just booked appears here.",list:["Confirmed items are solid, pending ones dashed.","Express check-out is offered on the same screen."],why:"A guest with a full itinerary stays engaged and spends more on property."},
+stay:{group:"On property",title:"My stay",lede:"Reservation, charges and service requests.",list:["Room charges update when a booking is charged to the room.","Requests for towels, a crib or late check-out go straight to staff.","Front desk number stays visible for guests who prefer to talk."],why:"Fewer calls to the desk and a smoother check-out lift both guest satisfaction and staff time."}
+};
+var TABS=[
+{id:"home",label:"Today",icon:"i-home",match:["home"]},
+{id:"explore",label:"Explore",icon:"i-compass",match:["explore","crater","slots","checkout","confirmed","pass","dining"]},
+{id:"chat",label:"Concierge",icon:"i-chat",match:["chat"]},
+{id:"trip",label:"My trip",icon:"i-cal",match:["trip"]},
+{id:"stay",label:"Stay",icon:"i-user",match:["stay"]}];
+document.querySelectorAll("[data-tabbar]").forEach(function(bar){
+bar.innerHTML=TABS.map(function(t){return '<button class="tab" data-go="'+t.id+'" data-tab="'+t.id+'"><svg><use href="#'+t.icon+'"/></svg>'+t.label+'</button>';}).join("");});
+
+/* ---------- booking data (illustrative) ---------- */
+var ACTS={
+soak:{name:"Crater soak & swim",short:"Soak",price:25,unit:"guest",durs:[60,90],mult:{60:1,90:1.5},cap:18,hours:["9:00 AM","11:00 AM","1:00 PM","2:30 PM","4:30 PM","7:00 PM"],vars:null,addons:[["Towel & locker",6],["Snorkel set",8],["Hot cocoa after",5]],
+ blurb:"Float in 90–96°F mineral water inside a limestone dome. Sessions are 60 or 90 minutes. Kids welcome.",stats:[["Water","90–96°F"],["Session","60 / 90 min"],["From","$25 / guest"],["Capacity","18 per slot"]],cls:"t-crater"},
+scuba:{name:"Crater scuba",short:"Scuba",price:125,unit:"diver",durs:[90],mult:{90:1},cap:6,hours:["8:00 AM","10:00 AM","1:00 PM","3:00 PM"],vars:[["Discover Scuba",0],["Certified diver",-30],["PADI Open Water (2 days)",270]],addons:[["Underwater photos",35],["Hood & gloves",10]],
+ blurb:"Warm-water dives in the Crater. Gear and an instructor are included. Discover with no experience, dive certified, or start your Open Water course.",stats:[["Water","90–96°F"],["Session","90 min"],["From","$95 / diver"],["Capacity","6 per slot"]],cls:"t-crater"},
+sup:{name:"SUP yoga in the Crater",short:"SUP yoga",price:45,unit:"guest",durs:[60],mult:{60:1},cap:10,hours:["8:00 AM","10:00 AM","4:00 PM","6:00 PM"],vars:null,addons:[["Post-class tea",4]],
+ blurb:"Paddleboard yoga on warm water. No experience needed; boards and mats are provided.",stats:[["Water","90–96°F"],["Session","60 min"],["From","$45 / guest"],["Capacity","10 per slot"]],cls:"t-sup"}
+};
+var DAYS=[["Tue",13],["Wed",14],["Thu",15],["Fri",16],["Sat",17],["Sun",18],["Mon",19]];
+var B={act:"soak",day:0,hour:"4:30 PM",guests:4,dur:60,vari:0,addons:{},pay:"room",paid:false};
+var extraTrip=[],charged=126;
+function esc(s){return String(s).replace(/[&<>]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;"}[c]})}
+function money(n){return "$ "+(n%1?n.toFixed(2):n)}
+function spots(a,day,h){var s=0,k=a+day+h;for(var i=0;i<k.length;i++)s=(s*31+k.charCodeAt(i))>>>0;var c=ACTS[a].cap;var taken=s%(c+2);if(day===0&&h==="4:30 PM"&&a==="soak")taken=c-6;return Math.max(0,c-Math.min(taken,c))}
+function total(){var a=ACTS[B.act],vadj=a.vars?a.vars[B.vari][1]:0;var base=(a.price+vadj)*a.mult[B.dur]*B.guests;var ex=0;Object.keys(B.addons).forEach(function(i){if(B.addons[i])ex+=a.addons[i][1]*B.guests});return base+ex}
+function setAct(k){if(B.act===k)return;B.act=k;B.dur=ACTS[k].durs[0];B.vari=0;B.addons={};B.hour=ACTS[k].hours[Math.min(2,ACTS[k].hours.length-1)];B.day=0}
+function dayLabel(){var d=DAYS[B.day];return d[0]+", Oct "+d[1]}
+
+function renderCrater(){var a=ACTS[B.act];
+document.querySelectorAll("[data-crater]").forEach(function(b){b.setAttribute("aria-pressed",b.dataset.crater===B.act?"true":"false")});
+$("#crater-body").innerHTML='<div class="stats">'+a.stats.map(function(s){return '<div class="stat"><span class="a-label">'+s[0]+'</span><b style="font-size:21px">'+s[1]+'</b></div>'}).join("")+'</div><p style="font-size:14px;line-height:1.55;color:var(--app-ink-2)">'+a.blurb+'</p>'+
+'<div class="card" style="display:flex;flex-direction:column;gap:2px"><span class="a-label">Good to know</span><div class="list-item" style="padding:9px 0"><svg width="18" height="18"><use href="#i-check"/></svg>Free cancellation up to 4 hours before</div><div class="list-item" style="padding:9px 0"><svg width="18" height="18"><use href="#i-check"/></svg>Charge to your room, no card at the desk</div><div class="list-item" style="padding:9px 0"><svg width="18" height="18"><use href="#i-check"/></svg>Towels and lockers at the entrance</div></div>'}
+
+function renderSlots(){var a=ACTS[B.act];$("#slots-title").textContent=a.short==="Soak"?"Book a soak":"Book "+a.short.toLowerCase();
+var h='<div class="week" style="width:100%">'+DAYS.map(function(d,i){return '<button class="day" data-bk-day="'+i+'" aria-pressed="'+(i===B.day)+'">'+d[0]+'<b>'+d[1]+'</b></button>'}).join("")+'</div>';
+if(a.vars)h+='<div><span class="a-label">Option</span><div class="chips" style="padding:9px 0 0;flex-wrap:wrap">'+a.vars.map(function(v,i){return '<button class="chip" data-bk-var="'+i+'" aria-pressed="'+(i===B.vari)+'">'+v[0]+'</button>'}).join("")+'</div></div>';
+if(a.durs.length>1)h+='<div><span class="a-label">Duration</span><div class="seg" style="margin-top:9px">'+a.durs.map(function(d){return '<button data-bk-dur="'+d+'" aria-pressed="'+(d===B.dur)+'">'+d+' min</button>'}).join("")+'</div></div>';
+h+='<div><span class="a-label">Pick a time</span><div class="slotgrid" style="margin-top:9px">'+a.hours.map(function(t){var s=spots(B.act,B.day,t);return '<button class="slotbtn" data-bk-hour="'+t+'" aria-pressed="'+(t===B.hour&&s>0)+'" '+(s?'':'disabled')+'>'+t+'<small>'+(s?s+' spots':'Full')+'</small></button>'}).join("")+'</div></div>';
+h+='<div class="card" style="display:flex;align-items:center;gap:12px"><div style="flex:1"><div class="a-h3">Guests</div><span class="a-meta">'+money(a.price)+' per '+a.unit+'</span></div><div class="stepper"><button data-step="-1" aria-label="Fewer">−</button><b>'+B.guests+'</b><button data-step="1" aria-label="More">+</button></div></div>';
+h+='<div class="card" style="padding:4px 14px"><span class="a-label" style="display:block;padding-top:10px">Add extras</span>'+a.addons.map(function(x,i){return '<div class="list-item"><span>'+x[0]+'<span class="a-meta" style="display:block">'+(x[1]?money(x[1])+' per guest':'Included')+'</span></span><button class="switch" data-bk-addon="'+i+'" aria-pressed="'+(!!B.addons[i])+'" aria-label="'+x[0]+'"></button></div>'}).join("")+'</div>';
+h+='<div class="card stack" style="gap:8px"><div style="display:flex"><span class="a-meta">'+esc(a.name)+(a.vars?" · "+a.vars[B.vari][0]:"")+' × '+B.guests+'</span><b style="margin-left:auto;font-size:13.5px">'+money((a.price+(a.vars?a.vars[B.vari][1]:0))*a.mult[B.dur]*B.guests)+'</b></div>'+
+Object.keys(B.addons).filter(function(i){return B.addons[i]&&a.addons[i][1]}).map(function(i){return '<div style="display:flex"><span class="a-meta">'+a.addons[i][0]+' × '+B.guests+'</span><b style="margin-left:auto;font-size:13.5px">'+money(a.addons[i][1]*B.guests)+'</b></div>'}).join("")+
+'<div style="display:flex;border-top:1px solid var(--app-line);padding-top:9px"><b>Total</b><b style="margin-left:auto;font-family:var(--display);font-size:22px">'+money(total())+'</b></div></div>';
+h+='<button class="btn amber" data-go="checkout">Continue · '+dayLabel()+', '+B.hour+'</button>';
+$("#slots-body").innerHTML=h}
+
+function renderCheckout(){var a=ACTS[B.act];
+var opts=[["room","Charge to Cottage 12","Settled at check-out","i-key"],["wallet","Apple Pay","Face ID","i-card"],["card","Visa •••• 4242","Saved card","i-card"]];
+$("#checkout-body").innerHTML='<div class="card" style="display:flex;gap:12px;align-items:center"><span class="thumb '+a.cls+'" style="width:54px;height:54px"></span><div><div class="a-h3">'+esc(a.name)+(a.vars?" · "+a.vars[B.vari][0]:"")+'</div><span class="a-meta">'+dayLabel()+' · '+B.hour+' · '+B.guests+' guests</span></div></div>'+
+'<span class="a-label">Pay with</span><div class="stack" style="gap:9px">'+opts.map(function(o){return '<button class="payopt" data-pay="'+o[0]+'" aria-pressed="'+(B.pay===o[0])+'"><span class="radio"><svg width="12" height="12"><use href="#i-check"/></svg></span><svg width="20" height="20"><use href="#'+o[3]+'"/></svg><span style="flex:1">'+o[1]+'<span class="a-meta" style="display:block;font-weight:500">'+o[2]+'</span></span></button>'}).join("")+'</div>'+
+'<div class="card" style="display:flex"><b>Total</b><b style="margin-left:auto;font-family:var(--display);font-size:22px">'+money(total())+'</b></div>'+
+'<p class="a-meta" style="text-align:center">Free cancellation up to 4 hours before.</p><button class="btn amber" id="confirm-pay">Confirm &amp; pay '+money(total())+'</button>'}
+
+function confirmBooking(){var a=ACTS[B.act];charged+=B.pay==="room"?total():0;extraTrip=[{time:dayLabel()+" · "+B.hour,title:a.name+(a.vars?" · "+a.vars[B.vari][0]:""),meta:B.guests+" guests · Just booked",now:true}];B.paid=true;go("confirmed")}
+
+function renderConfirmed(){var a=ACTS[B.act];
+$("#confirmed-body").innerHTML='<div class="burst" style="margin-top:6px"><svg width="34" height="34"><use href="#i-check"/></svg></div><div><h1 class="a-h1">You\'re booked.</h1><p class="a-meta" style="margin-top:5px">Confirmation HM-48213 · also sent to your email</p></div>'+
+'<div class="card stack" style="gap:10px;text-align:left"><span class="a-label">'+esc(a.name)+'</span><div style="display:flex;gap:12px;align-items:center"><span class="thumb '+a.cls+'" style="width:54px;height:54px"></span><div><div class="a-h3">'+dayLabel()+' · '+B.hour+'</div><span class="a-meta">'+B.guests+' guests · '+B.dur+' minutes'+(a.vars?" · "+a.vars[B.vari][0]:"")+'</span></div></div>'+
+'<div class="list-item" style="padding:9px 0"><svg width="18" height="18"><use href="#i-pin"/></svg>4 min walk from Cottage 12<span class="v">Directions</span></div><div class="list-item" style="padding:9px 0"><svg width="18" height="18"><use href="#i-bell"/></svg>Remind me 1 hour before<button class="switch" data-switch aria-pressed="true" aria-label="Reminder"></button></div></div>'+
+'<div class="quote" style="text-align:left">Bring swimwear and sandals. Towels are available at the entrance. Arrive 10 minutes early.<span class="who">The Crater team</span></div>'+
+'<button class="btn" data-go="pass"><svg width="18" height="18"><use href="#i-qr"/></svg>Show entry pass</button><button class="btn outline" data-go="trip">See my trip</button>'}
+
+function qr(){var n=25,s=7,cells="",seed=48213;function r(){seed=(seed*1103515245+12345)&0x7fffffff;return seed/0x7fffffff}
+function inFinder(x,y){return (x<8&&y<8)||(x>=n-8&&y<8)||(x<8&&y>=n-8)}
+function finder(ox,oy){var o="";for(var i=0;i<7;i++)for(var j=0;j<7;j++){var edge=i===0||j===0||i===6||j===6,core=i>=2&&i<=4&&j>=2&&j<=4;if(edge||core)o+='<rect x="'+((ox+i)*s)+'" y="'+((oy+j)*s)+'" width="'+s+'" height="'+s+'"/>'}return o}
+for(var x=0;x<n;x++)for(var y=0;y<n;y++){if(inFinder(x,y))continue;if(r()>.52)cells+='<rect x="'+(x*s)+'" y="'+(y*s)+'" width="'+s+'" height="'+s+'"/>'}
+return '<svg viewBox="0 0 '+(n*s)+' '+(n*s)+'" width="200" height="200" fill="#22271F" shape-rendering="crispEdges" aria-label="Entry pass QR code">'+cells+finder(0,0)+finder(n-7,0)+finder(0,n-7)+'</svg>'}
+function renderPass(){var a=ACTS[B.act];$("#pass-body").innerHTML='<div class="qrbox">'+qr()+'</div><div><div class="a-h2">'+esc(a.name)+'</div><span class="a-meta">'+dayLabel()+' · '+B.hour+' · '+B.guests+' guests</span></div><p class="a-meta">Show this at the Crater entrance. Staff scan it, no printed tickets.</p><button class="btn outline"><svg width="16" height="16"><use href="#i-share"/></svg>Send to a guest in my party</button>'}
+
+var DINE={milk:{t:"The Milk House",d:"Coffee · ice cream · grab-and-go meals",cls:"t-pickle",items:[["Morning latte","Local roast","$ 5"],["Warm pastry box","Baked each morning","$ 12"],["Scoop of the day","Made in-house","$ 6"]],cta:["Order to cottage","Pickup in 10 min"]},
+grill:{t:"1886 Grill",d:"BBQ · wood-fired pizza · local brews · cocktails",cls:"t-grill",items:[["Wood-fired margherita","Fresh mozzarella, basil, tomato","$ 18"],["Smoked brisket plate","Two sides, house sauce","$ 26"],["Wasatch pale ale","Local brew · draft","$ 8"]],cta:["Reserve a table","Order to cottage"]}};
+var dine="grill";
+function renderDine(){var v=DINE[dine];document.querySelectorAll("[data-dine]").forEach(function(b){b.setAttribute("aria-pressed",b.dataset.dine===dine?"true":"false")});
+$("#dine-body").innerHTML='<div class="thumb '+v.cls+'" style="width:100%;height:128px;display:block"><span style="position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-end;padding:14px;text-align:left;color:#fff"><span style="font-family:var(--display);font-size:28px;font-weight:600;line-height:1">'+v.t+'</span><span style="font-size:12px;color:rgba(255,255,255,.85)">'+v.d+'</span></span></div><div style="display:flex;gap:9px"><button class="btn sm" data-toast="Table request sent to '+v.t+'" style="flex:1">'+v.cta[0]+'</button><button class="btn outline sm" data-toast="Added to your order" style="flex:1">'+v.cta[1]+'</button></div><div class="card" style="padding:4px 14px"><span class="a-label" style="display:block;padding-top:10px">Popular</span>'+v.items.map(function(i){return '<div class="menu-item"><div><div class="a-h3">'+i[0]+'</div><span class="a-meta">'+i[1]+'</span></div><span class="price">'+i[2]+'</span></div>'}).join("")+'</div>'}
+
+/* ---------- concierge ---------- */
+var msgs=[
+{r:"out",t:"Can we add a scuba session for Thursday morning? Two of us are certified.",ts:"1:02 PM"},
+{r:"in",t:"Yes. Thursday has openings at 8:00 and 10:00 AM. Gear is included.",ts:"Concierge · 1:03 PM",a:[["Book scuba","act:scuba"]]}];
+var KB=[
+[/scuba|dive|diving|certif/i,"Scuba runs in the Crater with gear included: Discover (no experience), Certified diver, or the full Open Water course over two days.",[["Book scuba","act:scuba"]]],
+[/yoga|sup|paddle/i,"SUP yoga is held on the water inside the Crater. No experience needed, boards and mats provided.",[["Book SUP yoga","act:sup"]]],
+[/soak|hot ?spring|crater|swim|temperature/i,"The Crater water is 90–96°F year round. Sessions are 60 or 90 minutes, and towels and lockers are available at the entrance.",[["Book a soak","act:soak"]]],
+[/bring|wear|towel|robe|locker|swimsuit/i,"Bring a swimsuit and sandals. Towels and lockers are at the Crater entrance, and I can add a towel to any booking.",null],
+[/kid|child|age|family|toddler|baby/i,"Kids are welcome in the Crater soak and the heated pools. Ask me about age rules for scuba or SUP yoga, or I can flag it for a person.",null],
+[/dinner|eat|food|restaurant|hungry|lunch|breakfast|coffee|milk|grill/i,"The 1886 Grill has BBQ, wood-fired pizza and local brews. The Milk House has coffee, ice cream and grab-and-go meals. Simon's Tavern opens spring 2027.",[["See dining","go:dining"]]],
+[/cancel|change|reschedule/i,"You can cancel any booking free up to 4 hours before from My trip.",[["Open My trip","go:trip"]]],
+[/spa|massage/i,"The Spa at Homestead opens in 2027. I can notify you when bookings open.",[["Notify me","toast:We'll notify you when the Spa opens"]]],
+[/golf/i,"The redesigned course reopens summer 2027. I can add you to the notify list.",[["Notify me","toast:We'll notify you about the golf reopening"]]],
+[/atv|balloon|wakeboard|adventure|tour|horse|sleigh|tubing/i,"Adventourage runs ATV tours, hot air ballooning and wakeboarding. I can pass your request to a person who will confirm availability.",null],
+[/human|person|front desk|staff|call/i,"Of course. I've flagged this for the concierge team and they will message you in a few minutes. The front desk is (435) 654-1102.",null]];
+var SUG=["What should I bring?","Anything for kids?","Where can I eat tonight?","Book scuba","Talk to a person"];
+function paintMsgs(typing){var m=$("#msgs");
+m.innerHTML=msgs.map(function(x){return '<div class="bubble '+x.r+'">'+esc(x.t)+(x.a?'<div class="acts">'+x.a.map(function(a){return '<button data-x="'+a[1]+'">'+a[0]+'</button>'}).join("")+'</div>':'')+'<small>'+x.ts+'</small></div>'}).join("")+(typing?'<div class="bubble in typing"><i></i><i></i><i></i></div>':'');
+m.scrollTop=m.scrollHeight}
+function ask(q){var now=new Date();var ts=now.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"});msgs.push({r:"out",t:q,ts:ts});paintMsgs(true);
+var hit=null;for(var i=0;i<KB.length;i++){if(KB[i][0].test(q)){hit=KB[i];break}}
+if(/^book scuba$/i.test(q))hit=KB[0];
+setTimeout(function(){msgs.push({r:"in",t:hit?hit[1]:"Good question. I'll check with the team and follow up here shortly. Meanwhile I can book the Crater, answer questions or connect you with a person.",ts:"Concierge · "+ts,a:hit?hit[2]:null});paintMsgs()},750)}
+function renderChat(){paintMsgs();$("#sugg").innerHTML=SUG.map(function(s){return '<button class="chip" data-sug>'+s+'</button>'}).join("")}
+
+function renderTrip(){var base=[{time:"4:30 PM",title:"Crater soak",meta:"4 guests · Confirmed",now:true},{time:"7:00 PM",title:"1886 Grill",meta:"Table for 4 · Confirmed"}];
+var items=extraTrip.concat(base,[{time:"Thu 2:00 PM",title:"ATV tour · Adventourage",meta:"Pending: 2 spots held",sug:true}]);
+$("#trip-body").innerHTML=items.map(function(i){return '<div class="tl '+(i.now?"now":"")+(i.sug?" sug":"")+'"><span class="t">'+i.time+'</span><div class="a-h3">'+esc(i.title)+'</div><span class="a-meta">'+i.meta+'</span></div>'}).join("");
+$("#stay-charges").textContent=money(charged);$("#stay-count").textContent=2+extraTrip.length}
+
+/* ---------- navigation ---------- */
+var views={},railItems={};
+document.querySelectorAll("[data-view]").forEach(function(v){views[v.dataset.view]=v});
+document.querySelectorAll(".rail-item").forEach(function(b){railItems[b.dataset.go]=b});
+var current=null;
+function render(id){if(id==="crater")renderCrater();if(id==="slots")renderSlots();if(id==="checkout")renderCheckout();if(id==="confirmed")renderConfirmed();if(id==="pass")renderPass();if(id==="dining")renderDine();if(id==="chat")renderChat();if(id==="trip"||id==="stay")renderTrip()}
+function go(id){
+if(!views[id])return;
+var changed=id!==current;current=id;render(id);
+if(!changed)return;
+Object.keys(views).forEach(function(k){views[k].classList.toggle("active",k===id)});
+Object.keys(railItems).forEach(function(k){railItems[k].setAttribute("aria-current",k===id?"true":"false")});
+var sc=views[id].querySelector(".app-scroll");if(sc&&id!=="chat")sc.scrollTop=0;
+var tab=(TABS.filter(function(t){return t.match.indexOf(id)>-1})[0]||{}).id;
+document.querySelectorAll("[data-tab]").forEach(function(t){t.setAttribute("aria-current",t.dataset.tab===tab?"true":"false")});
+var n=NOTES[id];
+$("#n-group").textContent=n.group;$("#n-title").textContent=n.title;$("#n-lede").textContent=n.lede;
+$("#n-list").innerHTML=n.list.map(function(x){return "<li>"+x+"</li>"}).join("");$("#n-why").textContent=n.why;
+var i=ORDER.indexOf(id);$("#prev").disabled=(i<=0);$("#next").disabled=(i>=ORDER.length-1);
+if(history.replaceState)history.replaceState(null,"","#"+id)}
+function step(d){var i=ORDER.indexOf(current)+d;if(i>=0&&i<ORDER.length)go(ORDER[i])}
+function toast(t){var e=$("#toast");if(!e){e=document.createElement("div");e.id="toast";e.style.cssText="position:absolute;left:50%;bottom:92px;transform:translateX(-50%);background:#22271F;color:#fff;font-size:12.5px;font-weight:600;padding:10px 16px;border-radius:99px;z-index:20;transition:opacity .2s;max-width:80%;text-align:center";document.querySelector(".screen").appendChild(e)}
+e.textContent=t;e.style.opacity=1;clearTimeout(toast.t);toast.t=setTimeout(function(){e.style.opacity=0},2200)}
+function action(x){var p=x.split(":"),k=p[0],v=p.slice(1).join(":");if(k==="act"){setAct(v);go("slots")}else if(k==="go")go(v);else if(k==="toast")toast(v)}
+$("#prev").addEventListener("click",function(){step(-1)});$("#next").addEventListener("click",function(){step(1)});
+document.addEventListener("click",function(e){
+var t;
+if(t=e.target.closest("[data-x]")){action(t.dataset.x);return}
+if(t=e.target.closest("[data-book]")){var k=t.dataset.book;if(k!=="current")setAct(k);go("slots");return}
+if(t=e.target.closest("[data-go]")){e.preventDefault();go(t.dataset.go);return}
+if(t=e.target.closest("[data-crater]")){setAct(t.dataset.crater);renderCrater();return}
+if(t=e.target.closest("[data-dine]")){dine=t.dataset.dine;renderDine();return}
+if(t=e.target.closest("[data-toast]")){toast(t.dataset.toast);return}
+if(t=e.target.closest("[data-notify]")){toast("You're on the list. We'll notify you.");return}
+if(t=e.target.closest("[data-bk-day]")){B.day=+t.dataset.bkDay;renderSlots();return}
+if(t=e.target.closest("[data-bk-hour]")){B.hour=t.dataset.bkHour;renderSlots();return}
+if(t=e.target.closest("[data-bk-var]")){B.vari=+t.dataset.bkVar;renderSlots();return}
+if(t=e.target.closest("[data-bk-dur]")){B.dur=+t.dataset.bkDur;renderSlots();return}
+if(t=e.target.closest("[data-bk-addon]")){var i=t.dataset.bkAddon;B.addons[i]=!B.addons[i];renderSlots();return}
+if(t=e.target.closest("[data-step]")){B.guests=Math.max(1,Math.min(8,B.guests+(+t.dataset.step)));renderSlots();return}
+if(t=e.target.closest("[data-pay]")){B.pay=t.dataset.pay;renderCheckout();return}
+if(t=e.target.closest("#confirm-pay")){confirmBooking();return}
+if(t=e.target.closest("[data-sug]")){ask(t.textContent);return}
+var grp=e.target.closest("[data-chip],[data-seg],[data-day]");
+if(grp){var kind=grp.hasAttribute("data-chip")?"data-chip":grp.hasAttribute("data-seg")?"data-seg":"data-day";
+grp.parentElement.querySelectorAll("["+kind+"]").forEach(function(s){s.setAttribute("aria-pressed",s===grp?"true":"false")});
+if(grp.hasAttribute("data-dine"))return;return}
+var sw=e.target.closest("[data-switch]");if(sw)sw.setAttribute("aria-pressed",sw.getAttribute("aria-pressed")==="true"?"false":"true")});
+$("#chat-form").addEventListener("submit",function(e){e.preventDefault();var v=$("#chat-inp").value.trim();if(v){$("#chat-inp").value="";ask(v)}});
+var nb=$("#notes-toggle");
+function setNotes(on){document.body.setAttribute("data-notes",on?"on":"off");nb.setAttribute("aria-pressed",on?"true":"false");try{localStorage.setItem("hs-notes",on?"on":"off")}catch(e){}}
+nb.addEventListener("click",function(){setNotes(document.body.getAttribute("data-notes")!=="on")});
+document.addEventListener("keydown",function(e){if(e.target.matches("input,textarea"))return;
+if(e.key==="ArrowRight")step(1);if(e.key==="ArrowLeft")step(-1);if(e.key==="n"||e.key==="N")nb.click()});
+var sn=null;try{sn=localStorage.getItem("hs-notes")}catch(e){}
+setNotes(sn==="on");
+var start=(location.hash||"").replace("#","");
+go(views[start]?start:"welcome");
+})();
+</script></body></html>
